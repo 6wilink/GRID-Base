@@ -1,0 +1,25 @@
+#!/usr/bin/lua
+-- first run: 2017.03.17
+
+local function Echo(str)
+	io.write(str .. '\n')
+end
+
+local cgi = require 'six.cgi'
+Echo('Try (cgi) > done')
+
+local cmd = require 'six.cmd'
+local fmt = require 'six.fmt'
+local result = cmd.exec('uname')
+
+Echo('Try (cmd+fmt) > uname=[' .. fmt.str.trim(result) .. ']')
+
+local conf = require 'six.conf'
+Echo('Try (conf) > network.lan.ipaddr=[' .. conf.file.get('network','lan','ipaddr') .. ']')
+
+local file = require 'six.file'
+local html = require 'six.html'
+local json = require 'six.json'
+local seed = require 'six.seed'
+--local user = require 'six.user'
+Echo('Try (file/html/json/seed) > done')

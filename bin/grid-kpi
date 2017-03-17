@@ -1,0 +1,10 @@
+#!/usr/bin/lua
+-- first run: 2017.03.17
+
+local function Echo(str)
+	io.write(str .. '\n')
+end
+
+local abb = require 'kpi.ABB'
+local nw = require 'kpi.NW'
+Echo('Try (abb/gws/nw/sys) > done')
