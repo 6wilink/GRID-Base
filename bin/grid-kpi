@@ -1,10 +1,46 @@
 #!/usr/bin/lua
 -- first run: 2017.03.17
 
-local function Echo(str)
-	io.write(str .. '\n')
-end
-
 local abb = require 'kpi.ABB'
 local nw = require 'kpi.NW'
-Echo('Try (abb/gws/nw/sys) > done')
+local gws = require 'kpi.GWS'
+local sys = require 'kpi.SYS'
+
+
+function print_abb()
+	-- try Analog Baseband
+	local _fmt = '-------- %s --------\n%s\n\n'
+	local _json = abb.JSON()
+	local _str = string.format(_fmt, 'ABB', _json)
+	io.write(_str)
+end
+
+function print_nw()
+	-- try Network
+	local _fmt = '-------- %s --------\n%s\n\n'
+	local _json = nw.JSON()
+	local _str = string.format(_fmt, 'NW', _json)
+	io.write(_str)
+end
+
+function print_gws()
+	-- try GWS
+	local _fmt = '-------- %s --------\n%s\n\n'
+	local _json = gws.JSON()
+	local _str = string.format(_fmt, 'GWS', _json)
+	io.write(_str)
+end
+
+function print_sys()
+	-- try SYS
+	local _fmt = '-------- %s --------\n%s\n\n'
+	local _json = sys.JSON()
+	local _str = string.format(_fmt, 'SYS', _json)
+	io.write(_str)
+end
+
+
+print_abb()
+print_nw()
+print_gws()
+print_sys()

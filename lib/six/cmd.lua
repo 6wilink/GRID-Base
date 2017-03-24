@@ -1,7 +1,6 @@
+-- cmd wrapper
 -- by Qige
--- 2016.04.05
--- 2017.01.03/2017.03.04
--- 2017.03.13: add local, change "require 'six.cmd'" to "local cmd = require 'six.cmd'"
+-- 2016.04.05 - 2017.03.23
 
 local cmd = {}
 

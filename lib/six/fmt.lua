@@ -1,7 +1,9 @@
+-- http.find()
+-- str.split(), str.trim()
+-- table.haskey()
+-- echo(), s(), n()
 -- by Qige
--- 2017.01.09
--- 2017.03.13: add local, change "require 'six.fmt'" to "local fmt = require 'six.fmt'"
-
+-- 2016.04.05 - 2017.03.23
 
 local fmt = {}
 
@@ -10,7 +12,7 @@ local fmt = {}
 fmt.http = {}
 function fmt.http.find(key, data)
   if (key and data) then
-    local s1, s2, val = string.find(data, key.."=([%w\.]*)")
+    local _,_,val = string.find(data, key.."=([%w\.\-\_]*)")
     if (val) then
       return val
     end
@@ -34,7 +36,7 @@ end
 -- @return string/nil
 function fmt.str.trim(str)
   if (str ~= nil) then
-    local s1,s2,val = string.find(str, "([a-zA-Z0-9\b]*)")
+    local _,_,val = string.find(str, "([a-zA-Z0-9\b]*)")
     if (val) then
       return val
     end
@@ -43,13 +45,13 @@ function fmt.str.trim(str)
 end
 
 fmt.table = {}
-function fmt.table.exists(table, key)
+function fmt.table.haskey(table, key)
   return type(table[key] ~= nil)
 end
 
 
 -- printf()
-function fmt.printf(fmt, ...)
+function fmt.echo(fmt, ...)
   io.write(string.format(fmt, ...))
 end
 

@@ -1,12 +1,10 @@
 -- random
 -- by Qige
--- 2017.01.05
--- 2017.03.13: add local, change "require 'six.seed'" to "local seed = require 'six.seed'"
+-- 2017.01.05 - 2017.03.23
 
 local seed = {}
 
 function seed.seed()
-  --return math.randomseed(tostring(os.time()):reverse():sub(1, 6))
   return tostring(os.time()):reverse():sub(1, 6)
 end
 

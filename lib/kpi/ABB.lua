@@ -1,28 +1,14 @@
 -- abb Controller
 -- by Qige
--- 2017.02.23
+-- 2017.02.23 - 2017.03.23
 
-local iwinfo = require "iwinfo"
+local _iwinfo = require "iwinfo"
 local fmt = require 'six.fmt'
 
 
 local ABB = {}
 
-ABB.cache = {}
-ABB.cache.iw = nil
-ABB.cache._abb = nil
-ABB.cache._ts = nil
-
-function ABB.cache.mode()
-	if (ABB.cache._abb) then
-		return ABB.cache._abb.mode
-	else
-		return nil
-	end
-end
-
-
--- TODO: add chanbw, dev, api to .conf file
+-- todo: add chanbw, dev, api to .conf file
 ABB.conf = {}
 ABB.conf.chbw = 8
 ABB.conf.dev = 'wlan0'
@@ -35,37 +21,88 @@ ABB.conf.bar_inactive = 3000
 ABB.conf.intl = 2
 
 
-ABB.ops = {}
+-- todo: cache data into files
+ABB.cache = {}
+ABB.cache._iw = nil
+ABB.cache._abb_file = nil
+ABB.cache._ts = nil
+
+
+-- get
+function ABB.RAW()
+	ABB.init()
+
+	local _data = ABB.raw.read()
+	local _peer = ABB.raw.peers()
+
+	_data.peers = _peer or {}
+	
+	return _data
+end
+
+function ABB.JSON_Peers(_peers)
+	local _json = 'null'
+	if (type(_peers) == 'table' and #_peers > 0) then
+		local _json = '['
+
+		local _fmt_peer = '{"mac": "%s", "ip": "%s", "signal": %d, "noise": %d, '
+			.. '"tx_mcs": %d, "tx_br": %.1f, "tx_short_gi": %d, '
+			.. '"rx_mcs": %d, "rx_br": %.1f, "rx_short_gi": %d, '
+			.. '"inactive": %d }'
+
+		local idx, peer
+		for idx,peer in pairs(_peers) do
+			if (_json ~= '[') then
+				_json = _json .. '],['
+			end
+
+			local _peer = string.format(_fmt_peer, peer.mac, peer.ip, peer.signal, peer.noise,
+				peer.tx_mcs, peer.tx_br, peer.tx_short_gi,
+				peer.rx_mcs, peer.rx_br, peer.rx_short_gi,
+				peer.inactive)
+			_json = _json .. _peer
+		end
+
+		_json = _json .. ']'
+	end
+	return _json
+end
+
+function ABB.JSON()
+	local abb = ABB.RAW()
+	local _fmt_abb = '{"bssid": "%s","ssid":"%s","mode":"%s",'
+		.. '"encrypt":"%s","signal":%d,"noise":%d,"peers":%s}'
+
+	local _json_abb = string.format(_fmt_abb, abb.bssid, abb.ssid, abb.mode, 
+			abb.encrypt, abb.signal, abb.noise, ABB.JSON_Peers(abb.peers))
+
+	return _json_abb
+end
+
+
 
 -- init iw when first time use
-function ABB.ops.init()
+function ABB.init()
 	if (ABB.cache.iw == nil) then
 		local _dev = ABB.conf.dev or 'wlan0'
 		local _api = ABB.conf.api or 'nl80211'
-		ABB.cache.iw = iwinfo[_api]
+		ABB.cache._iw = _iwinfo[_api]
 	end
 end
 
 
-function ABB.ops.Data()
-	ABB.ops.init()
-	local _data = ABB.ops.read()
-	return _data
-end
+ABB.raw = {}
 
-
-function ABB.ops.read()
+function ABB.raw.read()
 	local _abb = {}
 
 	local _dev = ABB.conf.dev or 'wlan0'
-	local _iw = ABB.cache.iw
+	local _iw = ABB.cache._iw
 	local _bw = ABB.conf.chbw
 
-	local _mode = ABB.ops.mode(_iw.mode(_dev))
-
+	local _mode = ABB.raw.mode(_iw.mode(_dev))
 	local enc = _iw.encryption(_dev)
 
-	local _mode = ABB.ops.mode(_iw.mode(_dev))
 
 	local bssid, ssid
 	if (_mode == 'Mesh Point') then
@@ -95,8 +132,10 @@ function ABB.ops.read()
 	_abb.noise = noise
 	_abb.chbw = _bw
 	_abb.mode =  _mode
-	_abb.encrypt = enc and enc.description or ''
-	_abb.peers = ABB.ops.peers() or '{}'
+	local _encrypt = enc and enc.description or ''
+	if (_encrypt == 'None') then
+		_abb.encrypt = '-'
+	end
 
 	ABB.cache._abb = _abb
 	ABB.cache._ts = os.time()
@@ -104,7 +143,17 @@ function ABB.ops.read()
 	return _abb
 end
 
-function ABB.ops.mode(_mode)
+function ABB.raw.Noise()
+	local _dev = ABB.conf.dev or 'wlan0'
+	local _iw = ABB.cache._iw
+	local noise = fmt.n(_iw.noise(_dev))
+	if (noise == 0) then
+		noise = -101 -- gws4k noise=0
+	end
+	return noise
+end
+
+function ABB.raw.mode(_mode)
 	if (_mode == 'Master') then
 		return 'CAR'
 	elseif (_mode == 'Client') then
@@ -115,16 +164,11 @@ function ABB.ops.mode(_mode)
 end
 
 -- foreach peer(s), save
-function ABB.ops.peers()
-	local _result = '['
-	local _fmt = '{"mac": "%s", "ip": "%s", "signal": %d, "noise": %d, '
-		.. '"tx_mcs": %d, "tx_br": %.1f, "tx_short_gi": %d, '
-		.. '"rx_mcs": %d, "rx_br": %.1f, "rx_short_gi": %d, '
-		.. '"inactive": %d }'
+function ABB.raw.peers()
+	local _peers = {}
 
 	local _dev = ABB.conf.dev or 'wlan0'
-	local _iw = ABB.cache.iw
-
+	local _iw = ABB.cache._iw
 
 	-- 2017.03.06
 	local al = _iw.assoclist(_dev)
@@ -132,7 +176,6 @@ function ABB.ops.peers()
 	if (noise == 0) then
 		noise = -101 -- gws4k noise=0
 	end
-
 
 	local ai, ae
 	if al and next(al) then
@@ -145,35 +188,24 @@ function ABB.ops.peers()
 			_peer.signal = fmt.n(ae.signal)
 			_peer.noise = noise
 			
-			_peer.txmcs = fmt.n(ae.tx_mcs) or -1
-			_peer.txbr = fmt.n(ae.tx_rate)/1024*(8/20) or 0
+			_peer.tx_mcs = fmt.n(ae.tx_mcs) or -1
+			_peer.tx_br = fmt.n(ae.tx_rate)/1024*(8/20) or 0
 			_peer.tx_short_gi = fmt.n(ae.tx_short_gi) or -1
 
-			_peer.rxmcs = fmt.n(ae.rx_mcs) or -1
-			_peer.rxbr = fmt.n(ae.rx_rate)/1024*(8/20) or 0
+			_peer.rx_mcs = fmt.n(ae.rx_mcs) or -1
+			_peer.rx_br = fmt.n(ae.rx_rate)/1024*(8/20) or 0
 			_peer.rx_short_gi = fmt.n(ae.rx_short_gi) or -1
 
 			_peer.inactive = fmt.n(ae.inactive) or -1
 
 			if (_peer.inactive < ABB.conf.bar_inactive) then
-				local _r = string.format(_fmt, _peer.peer, _peer.ip, _peer.signal, _peer.noise,
-					_peer.txmcs, _peer.txbr, _peer.tx_short_gi,
-					_peer.rxmcs, _peer.rxbr, _peer.rx_short_gi, 
-					_peer.inactive)
-
-				if (_result ~= '[') then
-					_result = _result .. ','
-				end
-				_result = _result .. _r
+				table.insert(_peers, _peer)
 			end
 		end
 	end
 
-	_result = _result .. ']'
-	return _result
+	return _peers
 end
-
-ABB.get = {}
 
 
 return ABB

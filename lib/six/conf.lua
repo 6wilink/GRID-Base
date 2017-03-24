@@ -1,23 +1,11 @@
 -- default values
 -- by Qige
--- 2016.04.05/2017.01.03
--- 2017.01.09/2017.03.13
--- 2017.03.13: add local, change "require 'six.conf'" to "local conf = require 'six.conf'"
+-- 2016.04.05 - 2017.03.23
 
 local _uci = require 'uci'
 
 local conf = {}
 
-conf.default = {}
-
-conf.default.grid = {}
-conf.default.grid.lite = {}
-conf.default.grid.lite.user = {}
-conf.default.grid.lite.file = 'grid-lite'
-conf.default.grid.lite.user.session = '/tmp/.grid_safe_remote'
-conf.default.grid.lite.user.username = 'root'
-conf.default.grid.lite.user.password = '6Harmonics'
---conf.default.grid.lite.user.remote = '192.168.1.1'
 
 conf.limit = {}
 
@@ -33,12 +21,32 @@ conf.reg.kv3 = "(%w+)%s*=%s*(%w+)"
 -- read param/option from conf file
 conf.file = {}
 function conf.file.get(conf, sec, opt)
-	local x = _uci.cursor()
-	return x:get(conf, sec, opt)
+	if (_uci ~= nil) then
+		if (conf ~= nil and sec ~= nil and opt ~= nil) then
+			local x = _uci.cursor()
+			return x:get(conf, sec, opt)
+		end
+	end
+	return nil
 end
 function conf.file.all(conf, sec)
-	local x = _uci.cursor()
-	return x:get_all(conf, sec)
+	if (_uci ~= nil) then
+		if (conf ~= nil and sec ~= nil) then
+			local x = _uci.cursor()
+			return x:get_all(conf, sec)
+		end
+	end
+	return nil
+end
+
+-- todo: need to be verified
+function conf.file.set(conf, sec, opt, val)
+	if (_uci ~= nil) then
+		if (conf ~= nil and sec ~= nil and opt ~= nil and val ~= nil) then
+			local x = _uci.cursor()
+			x:set(conf, sec, opt, val)
+		end
+	end
 end
 
 return conf
