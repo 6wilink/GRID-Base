@@ -60,10 +60,10 @@ function GWS.Save(_item, _val)
 	
 	local _platform = GWS.conf.platform
 	if (_platform == 'gws3k' or _platform == 'gws4k') then
-		_result = GWS.gws34.save(_item, _val)
+		_result = gws34.Save(_item, _val)
 	--elseif (_platform == 'gws5k') then
 	else
-		_result = GWS.gws5k.save(_item, _val)
+		_result = gws5k.Save(_item, _val)
 	end
 	return _result
 end
