@@ -4,6 +4,7 @@
 
 local _iwinfo = require "iwinfo"
 local fmt = require 'six.fmt'
+local cmd = require 'six.cmd'
 
 
 local ABB = {}
@@ -36,31 +37,33 @@ function ABB.RAW()
 	local _peer = ABB.raw.peers()
 
 	_data.peers = _peer or {}
-	
-	return _data
+
+  return _data
 end
 
 function ABB.JSON_Peers(_peers)
+	local _fmt_peer = '{"mac": "%s", "ip": "%s", "signal": %d, "noise": %d, '
+		.. '"tx_mcs": %d, "tx_br": %.1f, "tx_short_gi": %d, '
+		.. '"rx_mcs": %d, "rx_br": %.1f, "rx_short_gi": %d, '
+		.. '"inactive": %d }'
+
 	local _json = 'null'
 	if (type(_peers) == 'table' and #_peers > 0) then
-		local _json = '['
-
-		local _fmt_peer = '{"mac": "%s", "ip": "%s", "signal": %d, "noise": %d, '
-			.. '"tx_mcs": %d, "tx_br": %.1f, "tx_short_gi": %d, '
-			.. '"rx_mcs": %d, "rx_br": %.1f, "rx_short_gi": %d, '
-			.. '"inactive": %d }'
+		_json = '['
 
 		local idx, peer
-		for idx,peer in pairs(_peers) do
-			if (_json ~= '[') then
-				_json = _json .. '],['
-			end
+		for idx, peer in pairs(_peers) do
+			if (peer) then
+				if (_json ~= '[') then
+					_json = _json .. ','
+				end
 
-			local _peer = string.format(_fmt_peer, peer.mac, peer.ip, peer.signal, peer.noise,
-				peer.tx_mcs, peer.tx_br, peer.tx_short_gi,
-				peer.rx_mcs, peer.rx_br, peer.rx_short_gi,
-				peer.inactive)
-			_json = _json .. _peer
+				local _peer_json = string.format(_fmt_peer, peer.mac, peer.ip, peer.signal, peer.noise,
+					peer.tx_mcs, peer.tx_br, peer.tx_short_gi,
+					peer.rx_mcs, peer.rx_br, peer.rx_short_gi,
+					peer.inactive)
+				_json = _json .. _peer_json
+			end
 		end
 
 		_json = _json .. ']'
@@ -71,10 +74,12 @@ end
 function ABB.JSON()
 	local abb = ABB.RAW()
 	local _fmt_abb = '{"bssid": "%s","ssid":"%s","mode":"%s",'
-		.. '"encrypt":"%s","signal":%d,"noise":%d,"peers":%s}'
+		.. '"encrypt":"%s","signal":%d,"noise":%d,"peers_qty":%d,"peers":%s}'
 
-	local _json_abb = string.format(_fmt_abb, abb.bssid, abb.ssid, abb.mode, 
-			abb.encrypt, abb.signal, abb.noise, ABB.JSON_Peers(abb.peers))
+	local _peers = abb.peers
+	local _peers_json = ABB.JSON_Peers(_peers)
+	local _json_abb = string.format(_fmt_abb, abb.bssid or '-', abb.ssid or '-', abb.mode,
+			abb.encrypt or '-', abb.signal, abb.noise, #_peers or 0, _peers_json)
 
 	return _json_abb
 end
@@ -169,9 +174,11 @@ function ABB.raw.peers()
 
 	local _dev = ABB.conf.dev or 'wlan0'
 	local _iw = ABB.cache._iw
+	local _bssid = ABB.cache._iw or 'unknown bssid'
 
 	-- 2017.03.06
 	local al = _iw.assoclist(_dev)
+	local bssid = _iw.bssid(_dev)
 	local noise = fmt.n(_iw.noise(_dev))
 	if (noise == 0) then
 		noise = -101 -- gws4k noise=0
@@ -181,31 +188,32 @@ function ABB.raw.peers()
 	if al and next(al) then
 		for ai, ae in pairs(al) do
 			local _peer = {}
-			_peer.bssid = ae.bssid or 'unknown bssid'
-			_peer.peer = fmt.s(ai) or 'unknown ssid'
+			_peer.bssid = _bssid
+			_peer.mac = fmt.s(ai) or 'unknown device'
 			_peer.ip = ''
-			
+
 			_peer.signal = fmt.n(ae.signal)
-			_peer.noise = noise
-			
-			_peer.tx_mcs = fmt.n(ae.tx_mcs) or -1
-			_peer.tx_br = fmt.n(ae.tx_rate)/1024*(8/20) or 0
-			_peer.tx_short_gi = fmt.n(ae.tx_short_gi) or -1
+			if (_peer.signal ~= 0) then
+				_peer.noise = noise
 
-			_peer.rx_mcs = fmt.n(ae.rx_mcs) or -1
-			_peer.rx_br = fmt.n(ae.rx_rate)/1024*(8/20) or 0
-			_peer.rx_short_gi = fmt.n(ae.rx_short_gi) or -1
+				_peer.tx_mcs = fmt.n(ae.tx_mcs) or -1
+				_peer.tx_br = fmt.n(ae.tx_rate)/1024*(8/20) or 0
+				_peer.tx_short_gi = fmt.n(ae.tx_short_gi) or -1
 
-			_peer.inactive = fmt.n(ae.inactive) or -1
+				_peer.rx_mcs = fmt.n(ae.rx_mcs) or -1
+				_peer.rx_br = fmt.n(ae.rx_rate)/1024*(8/20) or 0
+				_peer.rx_short_gi = fmt.n(ae.rx_short_gi) or -1
 
-			if (_peer.inactive < ABB.conf.bar_inactive) then
-				table.insert(_peers, _peer)
+				_peer.inactive = fmt.n(ae.inactive) or -1
+
+				if (_peer.inactive < ABB.conf.bar_inactive) then
+					table.insert(_peers, _peer)
+				end
 			end
 		end
 	end
 
 	return _peers
 end
-
 
 return ABB
