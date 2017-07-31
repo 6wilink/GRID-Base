@@ -73,4 +73,12 @@ function fmt.n(x)
   end
 end
 
+function fmt.param(x)
+  if (x ~= nil and x ~= '') then
+    return fmt.n(x)
+  else
+    return nil
+  end
+end
+
 return fmt

@@ -7,6 +7,7 @@ local conf = require 'six.conf'
 local cmd = require 'six.cmd'
 local fmt = require 'six.fmt'
 
+local _num = fmt.param
 
 local GWS5K = {}
 
@@ -29,17 +30,17 @@ GWS5K.get.note = 'cat /tmp/.grid_cache_rfinfo'
 
 function GWS5K.RAW()
 	local _gws = {}
-	
+
 	-- cat rfinfo into temp file
 	cmd.exec(GWS5K.get.rfinfo)
 
 	--cmd.exec(GWS5K.cmd.wait)
 
-	_gws.rgn = cmd.exec(GWS5K.get.region) or -1
-	_gws.ch = cmd.exec(GWS5K.get.channel) or -1
-	_gws.chbw = cmd.exec(GWS5K.get.chbw) or -1
-	_gws.txpwr = cmd.exec(GWS5K.get.txpwr) or -1
-	_gws.rxg = cmd.exec(GWS5K.get.rxgain) or -1
+	_gws.rgn = _num(cmd.exec(GWS5K.get.region)) or -1
+	_gws.ch = _num(cmd.exec(GWS5K.get.channel)) or -1
+	_gws.chbw = _num(cmd.exec(GWS5K.get.chbw)) or -1
+	_gws.txpwr = _num(cmd.exec(GWS5K.get.txpwr)) or -1
+	_gws.rxg = _num(cmd.exec(GWS5K.get.rxgain)) or -1
 	_gws.tpc = -1
 
 	local _agc = cmd.exec(GWS5K.get.agc) or ''

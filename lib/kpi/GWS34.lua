@@ -7,6 +7,7 @@ local conf = require 'six.conf'
 local cmd = require 'six.cmd'
 local fmt = require 'six.fmt'
 
+local _num = fmt.param
 
 local GWS34 = {}
 
@@ -22,15 +23,15 @@ GWS34.conf.note = 'gettemp | tr -d "\n"'
 
 function GWS34.RAW()
 	local _gws = {}
-	
-	_gws.rgn = cmd.exec(GWS34.conf.region) or -1
-	_gws.ch = cmd.exec(GWS34.conf.channel) or -1
-	_gws.chbw = cmd.exec(GWS34.conf.chanbw) or -1
-	_gws.txpwr = cmd.exec(GWS34.conf.txpwr) or -1
+
+	_gws.rgn = _num(cmd.exec(GWS34.conf.region)) or -1
+	_gws.ch = _num(cmd.exec(GWS34.conf.channel)) or -1
+	_gws.chbw = _num(cmd.exec(GWS34.conf.chanbw)) or -1
+	_gws.txpwr = _num(cmd.exec(GWS34.conf.txpwr)) or -1
 	_gws.rxg = -99
 	_gws.tpc = -1
 	_gws.agc = -1
-	_gws.note = cmd.exec(GWS34.conf.note) or ''
+	_gws.note = _num(cmd.exec(GWS34.conf.note)) or ''
 
 	return _gws
 end
