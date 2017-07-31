@@ -1,0 +1,10 @@
+#!/usr/bin/lua
+-- first run: 2017.03.24
+
+local file = require 'six.cmd'
+local html = require 'six.conf'
+local json = require 'six.file'
+local seed = require 'six.fmt'
+local user = require 'six.seed'
+
+io.write('* trying cmd/conf/file/fmt/seed: done\n')
